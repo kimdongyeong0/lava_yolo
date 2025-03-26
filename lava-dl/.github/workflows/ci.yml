@@ -1,0 +1,75 @@
+name: Run CI
+permissions: read-all
+on:
+  push:
+    branches:
+      - main      
+  pull_request:
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        lfs: true
+
+    - name: Setup CI
+      uses: lava-nc/ci-setup-composite-action@v1.5.12_py3.10
+      with:
+        repository: 'Lava-DL'
+
+    - name: Run flakeheaven (flake8)
+      run: poetry run flakeheaven lint src/lava tests/
+
+  security-lint:
+    name: Security Lint Code
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        lfs: true
+
+    - name: Setup CI
+      uses: lava-nc/ci-setup-composite-action@v1.5.12_py3.10
+      with:
+        repository: 'Lava-DL'
+
+    - name: Run bandit    
+      uses: tj-actions/bandit@v5.1
+      with:
+        targets: |
+          src/lava/.      
+        options: "-r  --format custom --msg-template '{abspath}:{line}: {test_id}[bandit]: {severity}: {msg}'"
+
+  unit-tests:
+    name: Unit Test Code + Coverage
+    runs-on: ${{ matrix.operating-system }}
+    strategy:
+      matrix:
+        operating-system: [ubuntu-latest]
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        lfs: true
+    
+    - name: Setup CI
+      uses: lava-nc/ci-setup-composite-action@v1.5.12_py3.10
+      with:
+        repository: 'Lava-DL'    
+
+    - name: Run unit tests
+      run: |
+        # There is an issue "ImportError: cannot import name 'packaging' from 'pkg_resources'" when 
+        # using setuptools==70.0.0 -- temp fix to downgrade to  setuptools==69.5.1
+        poetry run pip install setuptools==69.5.1
+        poetry run pytest
+      
