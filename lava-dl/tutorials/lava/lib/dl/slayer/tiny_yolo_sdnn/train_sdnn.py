@@ -15,12 +15,15 @@ from torch.utils.tensorboard import SummaryWriter
 
 from lava.lib.dl import slayer
 from lava.lib.dl.slayer import obd
+from torchinfo import summary
 
+import matplotlib
+matplotlib.use('Agg')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-gpu', type=int, default=[0], help='which gpu(s) to use', nargs='+')
-    parser.add_argument('-b',   type=int, default=32,  help='batch size for dataloader')
+    parser.add_argument('-b',   type=int, default=8,  help='batch size for dataloader')
     parser.add_argument('-verbose', default=False, action='store_true', help='lots of debug printouts')
     # Model
     parser.add_argument('-model', type=str, default='tiny_yolov3_str', help='network model')
@@ -57,12 +60,14 @@ if __name__ == '__main__':
     parser.add_argument('-epoch',  type=int, default=200, help='number of epochs to run')
     parser.add_argument('-warmup', type=int, default=10,  help='number of epochs to warmup')
     # dataset
-    parser.add_argument('-dataset',     type=str,   default='BDD100K', help='dataset to use [BDD100K, DSIAC, PropheseeAutomotive]')
+    parser.add_argument('-dataset',     type=str,   default='custom')
     parser.add_argument('-path',        type=str,   default='data/bdd100k', help='dataset path to use ["data/prophesee", "data/bdd100k", "data/dsiac"]')
     parser.add_argument('-output_dir',  type=str,   default='.', help='directory in which to put log folders')
     parser.add_argument('-num_workers', type=int,   default=16, help='number of dataloader workers')
     parser.add_argument('-aug_prob',    type=float, default=0.2, help='training augmentation probability')
     parser.add_argument('-clamp_max',   type=float, default=5.0, help='exponential clamp in height/width calculation')
+
+    parser.add_argument('-num_classes', type=int, default=11, help='number of classes')
 
     args = parser.parse_args()
 
@@ -89,7 +94,7 @@ if __name__ == '__main__':
     print('Using GPUs {}'.format(args.gpu))
     device = torch.device('cuda:{}'.format(args.gpu[0]))
 
-    classes_output = {'BDD100K': 11, 'DSIAC': 10}
+    classes_output = {'BDD100K': 11, 'DSIAC': 10, 'custom': args.num_classes}
 
     print('Creating Network')
     if args.model == 'tiny_yolov3_str':
@@ -114,6 +119,8 @@ if __name__ == '__main__':
                                             clamp_max=args.clamp_max).to(device),
                                     device_ids=args.gpu)
         module = net.module
+        
+    summary(module)
 
     if args.sparsity:
         sparsity_montior = slayer.loss.SparsityEnforcer(
@@ -129,7 +136,7 @@ if __name__ == '__main__':
         print(f'Initializing model from {saved_model}')
         module.load_model(saved_model)
 
-    module.init_model((448, 448))
+    module.init_model((448, 448, 3))
 
     # Define optimizer module.
     print('Creating Optimizer')
@@ -152,12 +159,17 @@ if __name__ == '__main__':
 
     print('Creating Dataset')
 
-    if args.dataset == 'BDD100K' or args.dataset == 'DSIAC':
-        train_set = obd.dataset.BDD(root=args.path, dataset='track',
-                                    train=True, augment_prob=args.aug_prob,
-                                    randomize_seq=True)
-        test_set = obd.dataset.BDD(root=args.path, dataset='track',
-                                   train=False, randomize_seq=True)
+    if args.dataset == 'BDD100K' or args.dataset == 'DSIAC' or args.dataset == 'custom':
+        # train_set = obd.dataset.BDD(root=args.path, dataset='track',
+        #                             train=True, augment_prob=args.aug_prob,
+        #                             randomize_seq=True)
+        # test_set = obd.dataset.BDD(root=args.path, dataset='track',
+        #                            train=False, randomize_seq=True)
+        train_set = obd.dataset.custom(root=args.path, dataset='track',
+                                train=True, augment_prob=args.aug_prob,
+                                randomize_seq=True)
+        test_set = obd.dataset.custom(root=args.path, dataset='track',
+                                train=False, randomize_seq=True)
         train_loader = DataLoader(train_set,
                                   batch_size=args.b,
                                   shuffle=True,
@@ -193,6 +205,13 @@ if __name__ == '__main__':
 
     loss_tracker = dict(coord=[], obj=[], noobj=[], cls=[], iou=[])
     loss_order = ['coord', 'obj', 'noobj', 'cls', 'iou']
+    
+    # ------------------------------------------------------------------
+    # Initialize containers for learning rate and event rate tracking.
+    # ------------------------------------------------------------------
+    learning_rates = []         # Record learning rate at the end of each epoch
+    train_event_rates = {}      # Record training event rates for each layer (key: layer index)
+    test_event_rates = {}       # Record test event rates for each layer (key: layer index)
 
     print('Training/Testing Loop')
     for epoch in range(args.epoch):
@@ -210,6 +229,14 @@ if __name__ == '__main__':
 
             print('forward') if args.verbose else None
             predictions, counts = net(inputs, sparsity_montior)
+            
+            # Record training event rates per layer.
+            # Assuming counts[0] is a list/tensor of event rates for each layer.
+            if not train_event_rates:
+                for idx in range(len(counts[0])):
+                    train_event_rates[idx] = []
+            for idx, event_rate in enumerate(counts[0]):
+                train_event_rates[idx].append(event_rate.item())
 
             loss, loss_distr = yolo_loss(predictions, targets)
             if sparsity_montior is not None:
@@ -265,6 +292,10 @@ if __name__ == '__main__':
             header_list += [f'NoObj loss: {loss_distr[2].item()}']
             header_list += [f'Class loss: {loss_distr[3].item()}']
             header_list += [f'IOU   loss: {loss_distr[4].item()}']
+            
+            event_rate_str = 'Event Rate: [' + ', '.join([f'{c.item():.2f}' for c in counts[0]]) + ']'
+            with open(os.path.join(trained_folder, "train_counts.txt"), "a") as f:
+                f.write(event_rate_str + "\n")
 
             if i % args.track_iter == 0:
                 plt.figure()
@@ -279,6 +310,13 @@ if __name__ == '__main__':
                 plt.savefig(f'{trained_folder}/yolo_loss_tracker.png')
                 plt.close()
             stats.print(epoch, i, samples_sec, header=header_list)
+            
+        current_lr = scheduler.get_last_lr()[0]
+        learning_rates.append(current_lr)
+        print("Current Learning Rate:", current_lr)
+        lr_log_path = os.path.join(trained_folder, "learning_rates.txt")
+        with open(lr_log_path, "a") as lr_file:
+            lr_file.write(f"Epoch {epoch}: Train LR: {current_lr:.6f}, Test LR: {current_lr:.6f}, lrf: {args.lrf}\n")
 
         t_st = datetime.now()
         ap_stats = obd.bbox.metrics.APstats(iou_threshold=0.5)
@@ -288,6 +326,13 @@ if __name__ == '__main__':
             with torch.no_grad():
                 inputs = inputs.to(device)
                 predictions, counts = net(inputs)
+                
+                # Record test event rates per layer.
+                if not test_event_rates:
+                    for idx in range(len(counts[0])):
+                        test_event_rates[idx] = []
+                for idx, event_rate in enumerate(counts[0]):
+                    test_event_rates[idx].append(event_rate.item())
 
                 T = inputs.shape[-1]
                 predictions = [obd.bbox.utils.nms(predictions[..., t])
@@ -314,6 +359,9 @@ if __name__ == '__main__':
                 header_list += [f'NoObj loss: {loss_distr[2].item()}']
                 header_list += [f'Class loss: {loss_distr[3].item()}']
                 header_list += [f'IOU   loss: {loss_distr[4].item()}']
+                event_rate_str = 'Event Rate: [' + ', '.join([f'{c.item():.2f}' for c in counts[0]]) + ']'
+                with open(os.path.join(trained_folder, "test_counts.txt"), "a") as f:
+                    f.write(event_rate_str + "\n")
                 stats.print(epoch, i, samples_sec, header=header_list)
 
         writer.add_scalar('Loss/train', stats.training.loss, epoch)
@@ -382,3 +430,42 @@ if __name__ == '__main__':
     writer.add_hparams(params_dict, {'mAP@50': stats.testing.max_accuracy})
     writer.flush()
     writer.close()
+    
+    # ------------------------------------------------------------
+    # After training: Plotting Figures for Learning Rate & Event Rates
+    # ------------------------------------------------------------
+    # 1. Plot Learning Rate Schedule over Epochs.
+    plt.figure(figsize=(30, 20))
+    plt.plot(range(len(learning_rates)), learning_rates, marker='o')
+    plt.xlabel('Epoch')
+    plt.ylabel('Learning Rate')
+    plt.title('Learning Rate Schedule')
+    lr_plot_path = os.path.join(trained_folder, 'learning_rate_schedule.png')
+    plt.savefig(lr_plot_path)
+    plt.close()
+    print(f"Learning rate schedule saved to {lr_plot_path}")
+
+    # 2. Plot Training Event Rates (one figure per layer).
+    for layer_idx, rates in train_event_rates.items():
+        plt.figure(figsize=(30, 20))
+        plt.plot(range(len(rates)), rates, marker='o')
+        plt.xlabel('Iteration')
+        plt.ylabel('Event Rate')
+        plt.title(f'Training Event Rate for Layer {layer_idx}')
+        train_plot_path = os.path.join(trained_folder, f'train_event_rate_layer_{layer_idx}.png')
+        plt.savefig(train_plot_path)
+        plt.close()
+        print(f"Training event rate for layer {layer_idx} saved to {train_plot_path}")
+
+
+    # 3. Plot Test Event Rates (one figure per layer).
+    for layer_idx, rates in test_event_rates.items():
+        plt.figure(figsize=(30, 20))
+        plt.plot(range(len(rates)), rates, marker='o')
+        plt.xlabel('Iteration')
+        plt.ylabel('Event Rate')
+        plt.title(f'Test Event Rate for Layer {layer_idx}')
+        test_plot_path = os.path.join(trained_folder, f'test_event_rate_layer_{layer_idx}.png')
+        plt.savefig(test_plot_path)
+        plt.close()
+        print(f"Test event rate for layer {layer_idx} saved to {test_plot_path}")
