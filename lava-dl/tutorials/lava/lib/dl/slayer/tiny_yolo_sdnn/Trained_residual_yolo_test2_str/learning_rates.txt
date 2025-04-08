@@ -1,0 +1,2 @@
+Epoch 0: Train LR: 0.000010, Test LR: 0.000010, lrf: 0.01
+Epoch 0: Train LR: 0.001000, Test LR: 0.001000, lrf: 0.01

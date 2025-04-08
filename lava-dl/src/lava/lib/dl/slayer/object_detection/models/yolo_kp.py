@@ -55,7 +55,7 @@ class Network(YOLOBase):
             'threshold'     : threshold,   # delta unit threshold
             'tau_grad'      : tau_grad,    # delta unit surrogate gradient relaxation parameter
             'scale_grad'    : scale_grad,  # delta unit surrogate gradient scale parameter
-            'requires_grad' : False,       # trainable threshold
+            'requires_grad' : True,       # trainable threshold
             'shared_param'  : True,        # layer wise threshold
         }
         sdnn_params = {
@@ -252,6 +252,48 @@ class Network(YOLOBase):
         plt.close()
 
         return grad
+    
+    # In yolo_kp.py, update the test_layer method:
+    def test_layer(self, input_tensor, layer_idx):
+        """
+        Test individual layer in the network with a given input tensor.
+        
+        Parameters:
+        ----------
+        input_tensor : torch.tensor
+            Input tensor to process through the layer
+        layer_idx : int
+            Index of the layer to test
+            
+        Returns:
+        -------
+        torch.tensor
+            Output tensor from the specified layer
+        """
+        # If layer_idx is 0, return the input processed through the first block
+        if layer_idx == 0:
+            # Process through input blocks first if needed
+            if hasattr(self, 'input_blocks') and len(self.input_blocks) > 0:
+                x = input_tensor
+                # Normalize input if necessary
+                if hasattr(self, 'normalize_mean') and hasattr(self, 'normalize_std'):
+                    if self.normalize_mean.device != x.device:
+                        self.normalize_mean = self.normalize_mean.to(x.device)
+                        self.normalize_std = self.normalize_std.to(x.device)
+                    x = (x - self.normalize_mean) / self.normalize_std
+                
+                # Process through input blocks
+                for block in self.input_blocks:
+                    x = block(x)
+                    
+                return self.blocks[0](x)
+            else:
+                return self.blocks[0](input_tensor)
+    
+        # For subsequent layers, ensure the input has been properly processed
+        # through all preceding layers
+        x = input_tensor
+        return self.blocks[layer_idx](x)
 
     def load_model(self, model_file: str) -> None:
         """Selectively loads the model from save pytorch state dictionary.

@@ -3,9 +3,12 @@
 
 from . import tiny_yolov3_str, yolo_kp
 from . import yolo_kp_events
+from . import residual_kp
+from . import residual_str
 
 
 __all__ = [
     'tiny_yolov3_str', 'yolo_kp',
-    'yolo_kp_events'
+    'yolo_kp_events', 'residual_kp',
+    'residual_str'
 ]

@@ -101,6 +101,10 @@ if __name__ == '__main__':
         Network = obd.models.tiny_yolov3_str.Network
     elif args.model == 'yolo_kp':
         Network = obd.models.yolo_kp.Network
+    elif args.model == 'residual_kp':
+        Network = obd.models.residual_kp.Network
+    elif args.model == 'residual_str':
+        Network = obd.models.residual_str.Network
     else:
         raise RuntimeError(f'Model type {args.model=} not supported!')
     
