@@ -53,7 +53,7 @@ class Network(YOLOBase):
             'threshold'     : threshold,   # delta unit threshold
             'tau_grad'      : tau_grad,    # delta unit surrogate gradient relaxation parameter
             'scale_grad'    : scale_grad,  # delta unit surrogate gradient scale parameter
-            'requires_grad' : False,       # trainable threshold
+            'requires_grad' : True,       # trainable threshold
             'shared_param'  : True,        # layer wise threshold
         }
         sdnn_params = {

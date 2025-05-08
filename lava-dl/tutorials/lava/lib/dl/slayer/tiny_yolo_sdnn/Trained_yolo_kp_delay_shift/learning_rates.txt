@@ -1,0 +1,7 @@
+Epoch 0: Train LR: 0.000979, Test LR: 0.000979, lrf: 0.01
+Epoch 1: Train LR: 0.000917, Test LR: 0.000917, lrf: 0.01
+Epoch 2: Train LR: 0.000821, Test LR: 0.000821, lrf: 0.01
+Epoch 3: Train LR: 0.000697, Test LR: 0.000697, lrf: 0.01
+Epoch 4: Train LR: 0.000557, Test LR: 0.000557, lrf: 0.01
+Epoch 5: Train LR: 0.000412, Test LR: 0.000412, lrf: 0.01
+Epoch 6: Train LR: 0.000276, Test LR: 0.000276, lrf: 0.01

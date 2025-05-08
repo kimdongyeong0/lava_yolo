@@ -22,52 +22,52 @@ matplotlib.use('Agg')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-gpu', type=int, default=[0], help='which gpu(s) to use', nargs='+')
-    parser.add_argument('-b',   type=int, default=8,  help='batch size for dataloader')
-    parser.add_argument('-verbose', default=False, action='store_true', help='lots of debug printouts')
+    parser.add_argument('--gpu', type=int, default=[0], help='which gpu(s) to use', nargs='+')
+    parser.add_argument('--b',   type=int, default=8,  help='batch size for dataloader')
+    parser.add_argument('--verbose', default=False, action='store_true', help='lots of debug printouts')
     # Model
-    parser.add_argument('-model', type=str, default='tiny_yolov3_str', help='network model')
+    parser.add_argument('--model', type=str, default='tiny_yolov3_str', help='network model')
     # Sparsity
-    parser.add_argument('-sparsity', action='store_true', default=False, help='enable sparsity loss')
-    parser.add_argument('-sp_lam',   type=float, default=0.01, help='sparsity loss mixture ratio')
-    parser.add_argument('-sp_rate',  type=float, default=0.01, help='minimum rate for sparsity penalization')
+    parser.add_argument('--sparsity', action='store_true', default=False, help='enable sparsity loss')
+    parser.add_argument('--sp_lam',   type=float, default=0.01, help='sparsity loss mixture ratio')
+    parser.add_argument('--sp_rate',  type=float, default=0.01, help='minimum rate for sparsity penalization')
     # Optimizer
-    parser.add_argument('-lr',  type=float, default=0.0001, help='initial learning rate')
-    parser.add_argument('-wd',  type=float, default=1e-5,   help='optimizer weight decay')
-    parser.add_argument('-lrf', type=float, default=0.01,   help='learning rate reduction factor for lr scheduler')
+    parser.add_argument('--lr',  type=float, default=0.0001, help='initial learning rate')
+    parser.add_argument('--wd',  type=float, default=1e-5,   help='optimizer weight decay')
+    parser.add_argument('--lrf', type=float, default=0.01,   help='learning rate reduction factor for lr scheduler')
     # Network/SDNN
-    parser.add_argument('-threshold',  type=float, default=0.1, help='neuron threshold')
-    parser.add_argument('-tau_grad',   type=float, default=0.1, help='surrogate gradient time constant')
-    parser.add_argument('-scale_grad', type=float, default=0.2, help='surrogate gradient scale')
-    parser.add_argument('-clip',       type=float, default=10, help='gradient clipping limit')
+    parser.add_argument('--threshold',  type=float, default=0.1, help='neuron threshold')
+    parser.add_argument('--tau_grad',   type=float, default=0.1, help='surrogate gradient time constant')
+    parser.add_argument('--scale_grad', type=float, default=0.2, help='surrogate gradient scale')
+    parser.add_argument('--clip',       type=float, default=10, help='gradient clipping limit')
     # Pretrained model
-    parser.add_argument('-load', type=str, default='', help='pretrained model')
+    parser.add_argument('--load', type=str, default='', help='pretrained model')
     # Target generation
-    parser.add_argument('-tgt_iou_thr', type=float, default=0.5, help='ignore iou threshold in target generation')
+    parser.add_argument('--tgt_iou_thr', type=float, default=0.5, help='ignore iou threshold in target generation')
     # YOLO loss
-    parser.add_argument('-lambda_coord',    type=float, default=1.0, help='YOLO coordinate loss lambda')
-    parser.add_argument('-lambda_noobj',    type=float, default=2.0, help='YOLO no-object loss lambda')
-    parser.add_argument('-lambda_obj',      type=float, default=2.0, help='YOLO object loss lambda')
-    parser.add_argument('-lambda_cls',      type=float, default=4.0, help='YOLO class loss lambda')
-    parser.add_argument('-lambda_iou',      type=float, default=2.0, help='YOLO iou loss lambda')
-    parser.add_argument('-alpha_iou',       type=float, default=0.8, help='YOLO loss object target iou mixture factor')
-    parser.add_argument('-label_smoothing', type=float, default=0.1, help='YOLO class cross entropy label smoothing')
-    parser.add_argument('-track_iter',      type=int,  default=1000, help='YOLO loss tracking interval')
+    parser.add_argument('--lambda_coord',    type=float, default=1.0, help='YOLO coordinate loss lambda')
+    parser.add_argument('--lambda_noobj',    type=float, default=2.0, help='YOLO no-object loss lambda')
+    parser.add_argument('--lambda_obj',      type=float, default=2.0, help='YOLO object loss lambda')
+    parser.add_argument('--lambda_cls',      type=float, default=4.0, help='YOLO class loss lambda')
+    parser.add_argument('--lambda_iou',      type=float, default=2.0, help='YOLO iou loss lambda')
+    parser.add_argument('--alpha_iou',       type=float, default=0.8, help='YOLO loss object target iou mixture factor')
+    parser.add_argument('--label_smoothing', type=float, default=0.1, help='YOLO class cross entropy label smoothing')
+    parser.add_argument('--track_iter',      type=int,  default=1000, help='YOLO loss tracking interval')
     # Experiment
-    parser.add_argument('-exp',  type=str, default='',   help='experiment differentiater string')
-    parser.add_argument('-seed', type=int, default=None, help='random seed of the experiment')
+    parser.add_argument('--exp',  type=str, default='',   help='experiment differentiater string')
+    parser.add_argument('--seed', type=int, default=None, help='random seed of the experiment')
     # Training
-    parser.add_argument('-epoch',  type=int, default=200, help='number of epochs to run')
-    parser.add_argument('-warmup', type=int, default=10,  help='number of epochs to warmup')
+    parser.add_argument('--epoch',  type=int, default=200, help='number of epochs to run')
+    parser.add_argument('--warmup', type=int, default=10,  help='number of epochs to warmup')
     # dataset
-    parser.add_argument('-dataset',     type=str,   default='custom')
-    parser.add_argument('-path',        type=str,   default='data/bdd100k', help='dataset path to use ["data/prophesee", "data/bdd100k", "data/dsiac"]')
-    parser.add_argument('-output_dir',  type=str,   default='.', help='directory in which to put log folders')
-    parser.add_argument('-num_workers', type=int,   default=16, help='number of dataloader workers')
-    parser.add_argument('-aug_prob',    type=float, default=0.2, help='training augmentation probability')
-    parser.add_argument('-clamp_max',   type=float, default=5.0, help='exponential clamp in height/width calculation')
+    parser.add_argument('--dataset',     type=str,   default='custom')
+    parser.add_argument('--path',        type=str,   default='data/bdd100k', help='dataset path to use ["data/prophesee", "data/bdd100k", "data/dsiac"]')
+    parser.add_argument('--output_dir',  type=str,   default='.', help='directory in which to put log folders')
+    parser.add_argument('--num_workers', type=int,   default=16, help='number of dataloader workers')
+    parser.add_argument('--aug_prob',    type=float, default=0.2, help='training augmentation probability')
+    parser.add_argument('--clamp_max',   type=float, default=5.0, help='exponential clamp in height/width calculation')
 
-    parser.add_argument('-num_classes', type=int, default=11, help='number of classes')
+    parser.add_argument('--num_classes', type=int, default=11, help='number of classes')
 
     args = parser.parse_args()
 
@@ -209,13 +209,6 @@ if __name__ == '__main__':
 
     loss_tracker = dict(coord=[], obj=[], noobj=[], cls=[], iou=[])
     loss_order = ['coord', 'obj', 'noobj', 'cls', 'iou']
-    
-    # ------------------------------------------------------------------
-    # Initialize containers for learning rate and event rate tracking.
-    # ------------------------------------------------------------------
-    learning_rates = []         # Record learning rate at the end of each epoch
-    train_event_rates = {}      # Record training event rates for each layer (key: layer index)
-    test_event_rates = {}       # Record test event rates for each layer (key: layer index)
 
     print('Training/Testing Loop')
     for epoch in range(args.epoch):
@@ -233,14 +226,6 @@ if __name__ == '__main__':
 
             print('forward') if args.verbose else None
             predictions, counts = net(inputs, sparsity_montior)
-            
-            # Record training event rates per layer.
-            # Assuming counts[0] is a list/tensor of event rates for each layer.
-            if not train_event_rates:
-                for idx in range(len(counts[0])):
-                    train_event_rates[idx] = []
-            for idx, event_rate in enumerate(counts[0]):
-                train_event_rates[idx].append(event_rate.item())
 
             loss, loss_distr = yolo_loss(predictions, targets)
             if sparsity_montior is not None:
@@ -314,13 +299,6 @@ if __name__ == '__main__':
                 plt.savefig(f'{trained_folder}/yolo_loss_tracker.png')
                 plt.close()
             stats.print(epoch, i, samples_sec, header=header_list)
-            
-        current_lr = scheduler.get_last_lr()[0]
-        learning_rates.append(current_lr)
-        print("Current Learning Rate:", current_lr)
-        lr_log_path = os.path.join(trained_folder, "learning_rates.txt")
-        with open(lr_log_path, "a") as lr_file:
-            lr_file.write(f"Epoch {epoch}: Train LR: {current_lr:.6f}, Test LR: {current_lr:.6f}, lrf: {args.lrf}\n")
 
         t_st = datetime.now()
         ap_stats = obd.bbox.metrics.APstats(iou_threshold=0.5)
@@ -330,13 +308,6 @@ if __name__ == '__main__':
             with torch.no_grad():
                 inputs = inputs.to(device)
                 predictions, counts = net(inputs)
-                
-                # Record test event rates per layer.
-                if not test_event_rates:
-                    for idx in range(len(counts[0])):
-                        test_event_rates[idx] = []
-                for idx, event_rate in enumerate(counts[0]):
-                    test_event_rates[idx].append(event_rate.item())
 
                 T = inputs.shape[-1]
                 predictions = [obd.bbox.utils.nms(predictions[..., t])
@@ -434,42 +405,3 @@ if __name__ == '__main__':
     writer.add_hparams(params_dict, {'mAP@50': stats.testing.max_accuracy})
     writer.flush()
     writer.close()
-    
-    # ------------------------------------------------------------
-    # After training: Plotting Figures for Learning Rate & Event Rates
-    # ------------------------------------------------------------
-    # 1. Plot Learning Rate Schedule over Epochs.
-    plt.figure(figsize=(30, 20))
-    plt.plot(range(len(learning_rates)), learning_rates, marker='o')
-    plt.xlabel('Epoch')
-    plt.ylabel('Learning Rate')
-    plt.title('Learning Rate Schedule')
-    lr_plot_path = os.path.join(trained_folder, 'learning_rate_schedule.png')
-    plt.savefig(lr_plot_path)
-    plt.close()
-    print(f"Learning rate schedule saved to {lr_plot_path}")
-
-    # 2. Plot Training Event Rates (one figure per layer).
-    for layer_idx, rates in train_event_rates.items():
-        plt.figure(figsize=(30, 20))
-        plt.plot(range(len(rates)), rates, marker='o')
-        plt.xlabel('Iteration')
-        plt.ylabel('Event Rate')
-        plt.title(f'Training Event Rate for Layer {layer_idx}')
-        train_plot_path = os.path.join(trained_folder, f'train_event_rate_layer_{layer_idx}.png')
-        plt.savefig(train_plot_path)
-        plt.close()
-        print(f"Training event rate for layer {layer_idx} saved to {train_plot_path}")
-
-
-    # 3. Plot Test Event Rates (one figure per layer).
-    for layer_idx, rates in test_event_rates.items():
-        plt.figure(figsize=(30, 20))
-        plt.plot(range(len(rates)), rates, marker='o')
-        plt.xlabel('Iteration')
-        plt.ylabel('Event Rate')
-        plt.title(f'Test Event Rate for Layer {layer_idx}')
-        test_plot_path = os.path.join(trained_folder, f'test_event_rate_layer_{layer_idx}.png')
-        plt.savefig(test_plot_path)
-        plt.close()
-        print(f"Test event rate for layer {layer_idx} saved to {test_plot_path}")

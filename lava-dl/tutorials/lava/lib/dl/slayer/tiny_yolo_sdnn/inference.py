@@ -51,8 +51,8 @@ args = parser.parse_args()
 
 
 # inference_model = 'tiny_yolov3_str'  # Loihi compatible TinyYOLOv3 network
-# inference_model = 'yolo_kp'          # Customized model tragetted for 8 chip Kapoho Point form factor
-inference_model = 'residual_yolo'
+inference_model = 'yolo_kp'          # Customized model tragetted for 8 chip Kapoho Point form factor
+# inference_model = 'residual_yolo'
 # inference_model = 'larger_yolo_kp'
 
 # args = slayer.utils.dotdict(load=f'Trained_{inference_model}_test1_lr0.001_mult_gaussian/network.pt')
