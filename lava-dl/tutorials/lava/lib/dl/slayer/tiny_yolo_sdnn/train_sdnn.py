@@ -96,27 +96,18 @@ if __name__ == '__main__':
 
     classes_output = {'BDD100K': 11, 'DSIAC': 10, 'custom': args.num_classes}
 
-    print('Creating Network')
-    if args.model == 'tiny_yolov3_str':
-        Network = obd.models.tiny_yolov3_str.Network
-    elif args.model == 'yolo_kp':
-        Network = obd.models.yolo_kp.Network
-    elif args.model == 'residual_kp':
-        Network = obd.models.residual_kp.Network
-    elif args.model == 'residual_str':
-        Network = obd.models.residual_str.Network
-    else:
-        raise RuntimeError(f'Model type {args.model=} not supported!')
+    print('Creating Network')    
+    Module = getattr(obd.models, args.model).Network
     
     if len(args.gpu) == 1:
-        net = Network(threshold=args.threshold,
+        net = Module(threshold=args.threshold,
                       tau_grad=args.tau_grad,
                       scale_grad=args.scale_grad,
                       num_classes=classes_output[args.dataset],
                       clamp_max=args.clamp_max).to(device)
         module = net
     else:
-        net = torch.nn.DataParallel(Network(threshold=args.threshold,
+        net = torch.nn.DataParallel(Module(threshold=args.threshold,
                                             tau_grad=args.tau_grad,
                                             scale_grad=args.scale_grad,
                                             num_classes=classes_output[args.dataset],
