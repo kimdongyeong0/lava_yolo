@@ -1,35 +1,35 @@
 alpha_iou : 0.8
-aug_prob : 0.4
-b : 4
+aug_prob : 0.2
+b : 8
 clamp_max : 5.0
-clip : 1.0
-dataset : BDD100K
-epoch : 200
-exp :
+clip : 10
+dataset : custom
+epoch : 300
+exp : 
 gpu : [0]
-label_smoothing : 0.03
-lambda_cls : 1.0
-lambda_coord : 2.0
-lambda_iou : 2.25
-lambda_noobj : 4.0
-lambda_obj : 1.8
-load : slayer
+label_smoothing : 0.1
+lambda_cls : 4.0
+lambda_coord : 1.0
+lambda_iou : 2.0
+lambda_noobj : 2.0
+lambda_obj : 2.0
+load : 
 lr : 0.0001
 lrf : 0.01
-model: yolo_kp
-num_workers : 12
+model : yolo_kp
+num_classes : 4
+num_workers : 16
 output_dir : .
-path : data/bdd100k
+path : /home/bcl/Documents/udacity/
 scale_grad : 0.2
 seed : None
 sp_lam : 0.01
 sp_rate : 0.01
-sparsity : True
-subset : False
+sparsity : False
 tau_grad : 0.1
-tgt_iou_thr : 0.25
+tgt_iou_thr : 0.5
 threshold : 0.1
-track_iter : 100
+track_iter : 1000
 verbose : False
-warmup : 40
+warmup : 10
 wd : 1e-05
